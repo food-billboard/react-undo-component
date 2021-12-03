@@ -1,0 +1,80 @@
+{
+  "private": false,
+  "name": "react-undo-component",
+  "version": "1.0.0",
+  "description": "React状态控制组件",
+  "scripts": {
+    "prepare": "husky install",
+    "_postinstall": "husky install",
+    "prepublishOnly": "pinst --disable",
+    "postpublish": "pinst --enable",
+    "start": "dumi dev",
+    "docs:build": "dumi build",
+    "docs:deploy": "gh-pages -d docs-dist",
+    "build": "cross-env BUILD_TYPE=lib father-build && cross-env BUILD_TYPE=es father-build",
+    "deploy": "np",
+    "release": "npm run build && npm publish",
+    "prettier": "prettier --write \"**/*.{js,jsx,tsx,ts,less,md,json}\"",
+    "test": "umi-test",
+    "test:coverage": "umi-test --coverage --passWithNoTests"
+  },
+  "keywords": [
+    "redo",
+    "undo",
+    "react",
+    "component",
+    "wrapper"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/food-billboard/react-undo-component"
+  },
+  "files": [
+    "es/",
+    "lib/"
+  ],
+  "jest": {
+    "setupFilesAfterEnv": [
+      "./jest-setup-test.js"
+    ]
+  },
+  "main": "lib/index.js",
+  "module": "es/index.js",
+  "typings": "lib/index.d.ts",
+  "types": "lib/index.d.ts",
+  "gitHooks": {
+    "pre-commit": "lint-staged"
+  },
+  "lint-staged": {
+    "*.{js,jsx,less,md,json}": [
+      "prettier --write"
+    ],
+    "*.ts?(x)": [
+      "prettier --parser=typescript --write"
+    ]
+  },
+  "dependencies": {
+    "@babel/runtime": "^7.16.3",
+    "react": "^16.12.0 || ^17.0.0"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^15.0.0",
+    "@commitlint/config-angular": "^15.0.0",
+    "@umijs/test": "^3.0.5",
+    "cross-env": "^7.0.3",
+    "cz-conventional-changelog": "^3.3.0",
+    "dumi": "^1.0.17",
+    "enzyme": "^3.11.0",
+    "enzyme-adapter-react-16": "^1.15.6",
+    "eslint-plugin-react-hooks": "^4.3.0",
+    "father-build": "^1.17.2",
+    "gh-pages": "^3.2.3",
+    "husky": "^7.0.4",
+    "lint-staged": "^10.0.7",
+    "pinst": "^2.1.6",
+    "prettier": "^2.5.0",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "yorkie": "^2.0.0"
+  }
+}
