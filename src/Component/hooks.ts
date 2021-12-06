@@ -1,8 +1,8 @@
 import { useCallback, useState, Dispatch, SetStateAction, useRef } from 'react'
 import UndoHistory from './history'
-import { ComponentProps } from './type'
+import { HookProps } from './type'
 
-export default function useRedo<S = undefined>(initialState: S | (() => S), configuration: ComponentProps<S>): [S | undefined, Dispatch<SetStateAction<S | undefined>>, UndoHistory] {
+export default function useRedo<S = undefined>(initialState: S | (() => S), configuration: HookProps<S>): [S | undefined, Dispatch<SetStateAction<S | undefined>>, UndoHistory] {
 
   // const [ state, setState ] = useState<S>()
 

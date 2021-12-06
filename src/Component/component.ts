@@ -1,10 +1,14 @@
 import React, { Component } from 'react'
+import UndoHistory from './history'
 import { ComponentProps } from './type'
 
-export default class WrapperComponent<P = {}, S = {}, SS = any> extends Component<P, S, SS> {
+export default class WrapperComponent<P = {}, S = {}, SS = any, C extends object = {}> extends Component<P, S, SS> {
 
-  constructor(props: P, configuration: ComponentProps<S>) {
+  constructor(props: P, configuration: ComponentProps<C>) {
     super(props)
+
+    this.generateUndoHistory(configuration)
+
     this.internalSetState = this.setState.bind(this)
     this.setState = function(state, callback) {
       this.internalSetState((prev, props) => {
@@ -14,9 +18,20 @@ export default class WrapperComponent<P = {}, S = {}, SS = any> extends Componen
         }else {
           realState = state 
         }
-
-
       }, callback)
+    }
+  }
+
+  private undoHistory:any 
+
+  private generateUndoHistory(configuration: ComponentProps<C>) {
+    const { observer, ...nextConfiguration } = configuration
+    if(observer === true) {
+      this.undoHistory = new UndoHistory(nextConfiguration)
+    }else {
+      observer?.forEach((cur) => {
+        this.undoHistory[cur] = new UndoHistory(nextConfiguration)
+      })
     }
   }
 

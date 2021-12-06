@@ -1,16 +1,17 @@
 import { ActionTypes, CAN_NOT_DEALING, DEFAULT_CONFIGURATION } from './constants'
-import { ComponentProps } from './type'
+import { HookProps } from './type'
 
 export default class UndoHistory<S=any> {
 
-  constructor(configuration: ComponentProps<S>={}) {
+  constructor(configuration: HookProps<S>={}, initialValue?: S) {
     this.config = {
       ...DEFAULT_CONFIGURATION,
       ...configuration,
-    } as Required<ComponentProps<S>>
+    } as Required<HookProps<S>>
+    if(initialValue !== undefined) this.initState(initialValue)
   }
 
-  private config!: Required<ComponentProps<S>>
+  private config!: Required<HookProps<S>>
 
   private feature: (S | undefined)[] = []
   private past: (S | undefined)[] = []
@@ -37,6 +38,11 @@ export default class UndoHistory<S=any> {
         return this.isNumber(index) && (index as number) >= 0 && this.past.length >= (index as number) + 1
     }
     return false 
+  }
+
+  // 设置初始值
+  initState(value: S) {
+    this.present = value 
   }
 
   // 后退
