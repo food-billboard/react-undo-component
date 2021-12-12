@@ -9,7 +9,7 @@ export type StateType<S> = {
 export interface HookProps<S=any> {
 
   // 限制保存的记录数量
-  limit?: number | false 
+  limit?: number 
 
   // 自定义筛选需要保存的状态
   filter?: (action: ActionTypes, currentState: StateType<S>, previousHistory: StateType<S>) => boolean 

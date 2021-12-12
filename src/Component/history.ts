@@ -1,5 +1,6 @@
-import { ActionTypes, CAN_NOT_DEALING, DEFAULT_CONFIGURATION } from './constants'
-import { HookProps } from './type'
+import { ActionTypes, CAN_NOT_DEALING, DEFAULT_CONFIGURATION, DEFAULT_PRESENT_DATA } from './constants'
+import Debug from './debug'
+import { HookProps, StateType } from './type'
 
 export default class UndoHistory<S=any> {
 
@@ -8,6 +9,7 @@ export default class UndoHistory<S=any> {
       ...DEFAULT_CONFIGURATION,
       ...configuration,
     } as Required<HookProps<S>>
+    this.debug = new Debug(!!this.config.debug)
     if(initialValue !== undefined) this.initState(initialValue)
   }
 
@@ -15,16 +17,33 @@ export default class UndoHistory<S=any> {
 
   private feature: (S | undefined)[] = []
   private past: (S | undefined)[] = []
-  private present?: S 
+  private present?: S | typeof DEFAULT_PRESENT_DATA = DEFAULT_PRESENT_DATA
+  private debug!: Debug
 
   private isNumber(value: any) {
     return typeof value === "number" && !Number.isNaN(value)
   }
 
+  public enqueue(state: S, prevState: S) {
+    // const prevFeature = [
+    //   ...this.feature
+    // ]
+    // const prevPast = [
+    //   ...this.past
+    // ]
+    // const prevPresent = this.present
+    this.present = state 
+    this.past.push(prevState)
+  }
+
+  private filter(action: keyof typeof ActionTypes, currentHistory: StateType<S>, prevHistory: StateType<S>) {
+
+  }
+
   private actionCan(type: keyof typeof ActionTypes, index?: number) {
     if(type === "CLEAR_HISTORY") return true 
     // limit 
-    if(this.config.limit !== false && this.feature.length + this.past.length > this.config.limit) return false 
+    if(!!~this.config.limit && this.feature.length + this.past.length > this.config.limit) return false 
     switch(type) {
       case "JUMP":
         return this.isNumber(index) && index !== 0 && (index as number) > 0 ? this.feature.length >= (index as number) : this.past.length >= (index as number) * -1 
@@ -49,7 +68,7 @@ export default class UndoHistory<S=any> {
   undo() {
     if(!this.actionCan(ActionTypes.UNDO)) return CAN_NOT_DEALING
     const newPresent = this.past.pop()
-    this.feature.unshift(this.present)
+    this.feature.unshift(this.present as S)
     this.present = newPresent
     return this.present
   }
@@ -57,8 +76,8 @@ export default class UndoHistory<S=any> {
   // 前进
   redo() {
     if(!this.actionCan(ActionTypes.REDO)) return CAN_NOT_DEALING
-    const newPresent = this.feature.pop()
-    this.past.unshift(this.present)
+    const newPresent = this.feature.shift()
+    this.past.push(this.present as S)
     this.present = newPresent
     return this.present
   }
@@ -68,6 +87,7 @@ export default class UndoHistory<S=any> {
     if(!this.actionCan(ActionTypes.CLEAR_HISTORY)) return CAN_NOT_DEALING 
     this.feature = []
     this.past = [] 
+    this.present = DEFAULT_PRESENT_DATA
   }
 
   // 前进或后退指定步数

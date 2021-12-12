@@ -10,8 +10,10 @@ export enum ActionTypes {
 
 export const CAN_NOT_DEALING = "__CAN_NOT_DEALING__"
 
+export const DEFAULT_PRESENT_DATA = "__DEFAULT_PRESENT_DATA__"
+
 export const DEFAULT_CONFIGURATION = {
-  limit: false,
+  limit: -1,
   debug: false,
   filter() {
     return true 
