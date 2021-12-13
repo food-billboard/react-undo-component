@@ -4,7 +4,7 @@
 
 ## Example
 ### class形式  
-```tsx
+```jsx
   import React from 'react'
   import { Component } from 'react-undo-component'
 
@@ -40,6 +40,60 @@
 ```
 
 ### hooks形式
+```jsx
+  import React, { useRef, useCallback, useEffect } from 'react'
+  import { useUndo } from 'react-undo-component'
+
+  export default () => {
+
+    const [ step, setStep, {
+      undo,
+      redo 
+    } ] = useUndo()
+
+    const canvasRef = useRef()
+
+    const handleClick = useCallback((e) => {
+      const left = e.target.offsetLeft 
+      const top = e.target.offsetTop 
+      const pageX = e.pageX 
+      const pageY = e.pageY 
+      const step = [ pageX - left, pageY - top ] 
+      setStep(step)
+    }, [])
+
+    const dragArc = useCallback((state) => {
+      if(!state) return 
+      const [ x, y ] = state 
+      const context = canvasRef.current.getContext("2d") 
+      context.clearRect(0, 0, 400, 400)
+      context.beginPath()
+      console.log(x, y)
+      context.arc(x, y , 10, 0, 2 * Math.PI)
+      context.stroke()
+    }, [])
+
+    useEffect(() => {
+      dragArc(step)
+    }, [step])
+
+    return (
+      <div>
+        <canvas
+          ref={canvasRef}
+          width={400}
+          height={400}
+          style={{backgroundColor: "rgba(0, 0, 0, 0.5)"}}
+          onClick={handleClick}
+        />
+        <button onClick={undo}>undo</button>
+        <button onClick={redo}>redo</button>
+      </div>
+    )
+
+  }
+
+```
 
 ### 指定需要保存记录的状态
 - 此例子适用于`class`组件，`hooks`组件本身就是单一监听  

@@ -32,7 +32,7 @@ export default function useRedo<S = any>(initialState: S | (() => S), configurat
       }else {
         realState = state 
       }
-      undoHistory.enqueue(realState)
+      undoHistory.enqueue(realState, prev)
       return realState
     })
   }, [])
