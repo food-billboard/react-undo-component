@@ -20,11 +20,15 @@ export default class UndoHistory<S=any> {
   private present?: S | typeof DEFAULT_PRESENT_DATA = DEFAULT_PRESENT_DATA
   private debug!: Debug
 
+  public get state() {
+    return this.present
+  }
+
   private isNumber(value: any) {
     return typeof value === "number" && !Number.isNaN(value)
   }
 
-  public enqueue(state: S, prevState: S) {
+  public enqueue(state: S, prevState?: S) {
     // const prevFeature = [
     //   ...this.feature
     // ]
@@ -32,6 +36,7 @@ export default class UndoHistory<S=any> {
     //   ...this.past
     // ]
     // const prevPresent = this.present
+    const realPrevState = prevState ?? this.present
     this.present = state 
     this.past.push(prevState)
   }
