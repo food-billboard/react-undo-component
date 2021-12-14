@@ -49,7 +49,7 @@
     const [ step, setStep, {
       undo,
       redo 
-    } ] = useUndo()
+    } ] = useUndo([])
 
     const canvasRef = useRef()
 
@@ -67,10 +67,11 @@
       const [ x, y ] = state 
       const context = canvasRef.current.getContext("2d") 
       context.clearRect(0, 0, 400, 400)
-      context.beginPath()
-      console.log(x, y)
-      context.arc(x, y , 10, 0, 2 * Math.PI)
-      context.stroke()
+      if(state.length) {
+        context.beginPath()
+        context.arc(x, y , 10, 0, 2 * Math.PI)
+        context.stroke()
+      }
     }, [])
 
     useEffect(() => {
