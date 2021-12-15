@@ -9,7 +9,11 @@ export default class UndoHistory<S=any> {
       ...DEFAULT_CONFIGURATION,
       ...configuration,
     } as Required<HookProps<S>>
-    this.debug = new Debug(!!this.config.debug)
+    this.debug = new Debug<{
+      present: S 
+      past: S[] 
+      feature: S[]
+    }>(!!this.config.debug)
     if(initialValue !== undefined) this.initState(initialValue)
   }
 
@@ -28,17 +32,35 @@ export default class UndoHistory<S=any> {
     return typeof value === "number" && !Number.isNaN(value)
   }
 
+  private logStart(action: keyof typeof ActionTypes, params: any={}) {
+    this.debug.start({
+      type: action,
+      ...params
+    }, {
+      past: this.past,
+      present: this.present,
+      feature: this.feature
+    })  
+  }
+
+  private logEnd() {
+    this.debug.end({
+      past: this.past,
+      present: this.present,
+      feature: this.feature
+    })  
+  }
+
   public enqueue(state: S, prevState?: S) {
-    // const prevFeature = [
-    //   ...this.feature
-    // ]
-    // const prevPast = [
-    //   ...this.past
-    // ]
-    // const prevPresent = this.present
+    this.logStart(ActionTypes.ENQUEUE)
+    this.debug.log("enqueue the state")
+    this.debug.log("previous state is: ", prevState)
+    this.debug.log("target state is: ", state)
     const realPrevState = prevState ?? this.present
     this.present = state 
     this.past.push(prevState)
+
+    this.logEnd()
   }
 
   private filter(action: keyof typeof ActionTypes, currentHistory: StateType<S>, prevHistory: StateType<S>) {
@@ -48,20 +70,33 @@ export default class UndoHistory<S=any> {
   private actionCan(type: keyof typeof ActionTypes, index?: number) {
     if(type === "CLEAR_HISTORY") return true 
     // limit 
-    if(!!~this.config.limit && this.feature.length + this.past.length > this.config.limit) return false 
+    if(!!~this.config.limit && this.feature.length + this.past.length > this.config.limit) {
+      this.debug.log(`${type} cannot be done because the history is limited`)
+      return false 
+    }
+    let valid = false 
     switch(type) {
       case "JUMP":
-        return this.isNumber(index) && index !== 0 && (index as number) > 0 ? this.feature.length >= (index as number) : this.past.length >= (index as number) * -1 
+        valid = this.isNumber(index) && index !== 0 && (index as number) > 0 ? this.feature.length >= (index as number) : this.past.length >= (index as number) * -1 
+        break 
       case "REDO":
-        return this.feature.length >= 1 
+        valid = this.feature.length >= 1 
+        break 
       case "UNDO":
-        return this.past.length >= 1
+        valid = this.past.length >= 1
+        break 
       case "JUMP_TO_FUTURE":
-        return this.isNumber(index) && (index as number) >= 0 && this.feature.length >= (index as number) + 1
+        valid = this.isNumber(index) && (index as number) >= 0 && this.feature.length >= (index as number) + 1
+        break 
       case "JUMP_TO_PAST":
-        return this.isNumber(index) && (index as number) >= 0 && this.past.length >= (index as number) + 1
+        valid = this.isNumber(index) && (index as number) >= 0 && this.past.length >= (index as number) + 1
+        break 
     }
-    return false 
+    
+    if(!valid) this.debug.log("action fail")
+
+    return valid 
+
   }
 
   // 设置初始值
@@ -71,33 +106,58 @@ export default class UndoHistory<S=any> {
 
   // 后退
   undo() {
-    if(!this.actionCan(ActionTypes.UNDO)) return CAN_NOT_DEALING
+    this.logStart(ActionTypes.UNDO)
+    if(!this.actionCan(ActionTypes.UNDO)) {
+      this.logEnd()
+      return CAN_NOT_DEALING
+    }
     const newPresent = this.past.pop()
     this.feature.unshift(this.present as S)
     this.present = newPresent
+
+    this.logEnd()
+
     return this.present
   }
 
   // 前进
   redo() {
-    if(!this.actionCan(ActionTypes.REDO)) return CAN_NOT_DEALING
+    this.logStart(ActionTypes.REDO)
+    if(!this.actionCan(ActionTypes.REDO)) {
+      this.logEnd()
+      return CAN_NOT_DEALING
+    }
     const newPresent = this.feature.shift()
     this.past.push(this.present as S)
     this.present = newPresent
+
+    this.logEnd()
+
     return this.present
   }
 
   // 清除  
   clear() {
-    if(!this.actionCan(ActionTypes.CLEAR_HISTORY)) return CAN_NOT_DEALING 
+    this.logStart(ActionTypes.CLEAR_HISTORY)
+    if(!this.actionCan(ActionTypes.CLEAR_HISTORY)) {
+      this.logEnd()
+      return CAN_NOT_DEALING
+    } 
     this.feature = []
     this.past = [] 
     this.present = DEFAULT_PRESENT_DATA
+
+    this.logEnd()
+
   }
 
   // 前进或后退指定步数
   jump(index: number) {
-    if(!this.actionCan(ActionTypes.JUMP, index)) return CAN_NOT_DEALING
+    this.logStart(ActionTypes.JUMP)
+    if(!this.actionCan(ActionTypes.JUMP, index)) {
+      this.logEnd()
+      return CAN_NOT_DEALING
+    }
     let newFeature 
     if(index > 0) {
       const temp = this.feature.splice(0, index)
@@ -110,26 +170,43 @@ export default class UndoHistory<S=any> {
       this.feature.unshift(...temp)
       this.present = newFeature
     }
+
+    this.logEnd()
+
     return newFeature
   }
 
   // 跳到指定past位置
   jumpToPast(index: number) {
-    if(!this.actionCan(ActionTypes.JUMP_TO_PAST, index)) return CAN_NOT_DEALING
+    this.logStart(ActionTypes.JUMP_TO_PAST)
+    if(!this.actionCan(ActionTypes.JUMP_TO_PAST, index)) {
+      this.logEnd()
+      return CAN_NOT_DEALING
+    }
     const temp = this.past.splice(index, this.past.length - index)
     const newPresent = temp.shift()
     this.feature.unshift(...temp)
     this.present = newPresent
+
+    this.logEnd()
+
     return newPresent
   }
 
   // 跳到指定future位置
   jumpToFuture(index: number) {
-    if(!this.actionCan(ActionTypes.JUMP_TO_FUTURE, index)) return CAN_NOT_DEALING
+    this.logStart(ActionTypes.JUMP_TO_FUTURE)
+    if(!this.actionCan(ActionTypes.JUMP_TO_FUTURE, index)) {
+      this.logEnd()
+      return CAN_NOT_DEALING
+    }
     const temp = this.feature.splice(0, index + 1)
     const newPresent = temp.pop()
     this.past.push(...temp)
     this.present = newPresent
+
+    this.logEnd()
+
     return newPresent
   }
 

@@ -104,6 +104,46 @@
 ### 限制保存的记录条数
 
 ### debug  
+```jsx
+  import React from 'react'
+  import { Component } from 'react-undo-component'
+
+  export default class extends Component {
+
+    constructor(props) {
+      super(props, {
+        debug: true 
+      })
+    }
+
+    state = {
+      counter: 0
+    }
+
+    handleAdd = () => {
+      this.setState(prev => {
+        return {
+          counter: prev.counter + 1
+        }
+      })
+    }
+
+    render() {
+      const { counter } = this.state 
+
+      return (
+        <div>
+          <button onClick={() => this.undo()}>undo</button>
+          <button onClick={() => this.redo()}>redo</button>
+          <button onClick={this.handleAdd}>+1</button>
+          <div>{counter}</div>
+        </div>
+      )
+    }
+
+  }
+
+```
 
 <style>
   button {

@@ -1,5 +1,6 @@
+import { ActionTypes } from './constants'
 
-class Debug {
+class Debug<S=any> {
 
   constructor(debug: boolean) {
     this.__DEBUG__ = debug 
@@ -54,7 +55,10 @@ class Debug {
   }
 
   /* istanbul ignore next: debug messaging is not tested */
-  start(action: any, state: any) {
+  start(action: {
+    type: keyof typeof ActionTypes
+    [key: string]: any 
+  }, state: S) {
     this.initBuffer()
     if (this.__DEBUG__) {
       this.displayBuffer.header = ['%cundo', 'font-style: italic', 'action', action.type]
@@ -64,7 +68,7 @@ class Debug {
   }
 
   /* istanbul ignore next: debug messaging is not tested */
-  end(nextState: any) {
+  end(nextState: S) {
     if (this.__DEBUG__) {
       this.displayBuffer.next = this.colorFormat('next history', this.colors.nextState, nextState)
       this.printBuffer()
