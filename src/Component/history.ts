@@ -12,14 +12,14 @@ export default class UndoHistory<S=any> {
     this.debug = new Debug<{
       present: S 
       past: S[] 
-      feature: S[]
+      future: S[]
     }>(!!this.config.debug)
     if(initialValue !== undefined) this.initState(initialValue)
   }
 
   private config!: Required<HookProps<S>>
 
-  private feature: (S | undefined)[] = []
+  private future: (S | undefined)[] = []
   private past: (S | undefined)[] = []
   private present?: S | typeof DEFAULT_PRESENT_DATA = DEFAULT_PRESENT_DATA
   private debug!: Debug
@@ -39,7 +39,7 @@ export default class UndoHistory<S=any> {
     }, {
       past: this.past,
       present: this.present,
-      feature: this.feature
+      future: this.future
     })  
   }
 
@@ -47,7 +47,7 @@ export default class UndoHistory<S=any> {
     this.debug.end({
       past: this.past,
       present: this.present,
-      feature: this.feature
+      future: this.future
     })  
   }
 
@@ -61,38 +61,61 @@ export default class UndoHistory<S=any> {
     this.debug.log("enqueue the state")
     this.debug.log("previous state is: ", prevState)
     this.debug.log("target state is: ", state)
-    const realPrevState = prevState ?? this.present
-    this.present = state 
-    if(!!~limit && this.past.length + this.feature.length >= limit) this.past.shift()
-    this.past.push(prevState)
+
+    this.filter(ActionTypes.ENQUEUE, (past, future, present) => {
+      const newPresent = state 
+      if(!!~limit && past.length + future.length >= limit) past.shift()
+      past.push(prevState)
+      return {
+        past: past,
+        future,
+        present: newPresent
+      }
+    })
 
     this.logEnd()
   }
 
-  private filter(action: keyof typeof ActionTypes, currentHistory: StateType<S>, prevHistory: StateType<S>) {
-
+  private filter(action: ActionTypes, actionMethod: (past: any[], next: any[], present: any) => StateType<S>) {
+    const { filter } = this.config 
+    const currentState = actionMethod([...this.past], [...this.future], this.present)
+    const { past, future, present } = currentState
+    const isFilterList = Array.isArray(filter) && filter.includes(action) 
+    const isCustomFilter = typeof filter === "function" && filter(action, currentState, {
+      past: this.past as S[],
+      future: this.future as S[],
+      present: this.present as any 
+    })
+    if(isFilterList || isCustomFilter || filter === undefined) {
+      this.past = past
+      this.future = future
+      this.present = present
+      return 
+    }
+    this.debug.log("the action is not performance because filter")
+    return CAN_NOT_DEALING
   }
 
   private actionCan(type: keyof typeof ActionTypes, index?: number) {
     if(type === "CLEAR_HISTORY") return true 
     // limit 
-    if(!!~this.config.limit && this.feature.length + this.past.length > this.config.limit) {
+    if(!!~this.config.limit && this.future.length + this.past.length > this.config.limit) {
       this.debug.log(`${type} cannot be done because the history is limited`)
       return false 
     }
     let valid = false 
     switch(type) {
       case "JUMP":
-        valid = this.isNumber(index) && index !== 0 && (index as number) > 0 ? this.feature.length >= (index as number) : this.past.length >= (index as number) * -1 
+        valid = this.isNumber(index) && index !== 0 && (index as number) > 0 ? this.future.length >= (index as number) : this.past.length >= (index as number) * -1 
         break 
       case "REDO":
-        valid = this.feature.length >= 1 
+        valid = this.future.length >= 1 
         break 
       case "UNDO":
         valid = this.past.length >= 1
         break 
       case "JUMP_TO_FUTURE":
-        valid = this.isNumber(index) && (index as number) >= 0 && this.feature.length >= (index as number) + 1
+        valid = this.isNumber(index) && (index as number) >= 0 && this.future.length >= (index as number) + 1
         break 
       case "JUMP_TO_PAST":
         valid = this.isNumber(index) && (index as number) >= 0 && this.past.length >= (index as number) + 1
@@ -117,13 +140,20 @@ export default class UndoHistory<S=any> {
       this.logEnd()
       return CAN_NOT_DEALING
     }
-    const newPresent = this.past.pop()
-    this.feature.unshift(this.present as S)
-    this.present = newPresent
+
+    const result = this.filter(ActionTypes.UNDO, (past, future, present) => {
+      const newPresent = past.pop()
+      future.unshift(present as S)
+      return {
+        past: past,
+        future,
+        present: newPresent
+      }
+    })
 
     this.logEnd()
 
-    return this.present
+    return this.isActionDataValid(result) ? this.present : result
   }
 
   // 前进
@@ -133,13 +163,21 @@ export default class UndoHistory<S=any> {
       this.logEnd()
       return CAN_NOT_DEALING
     }
-    const newPresent = this.feature.shift()
-    this.past.push(this.present as S)
-    this.present = newPresent
+
+    const result = this.filter(ActionTypes.REDO, (past, future, present) => {
+      const newPresent = future.shift()
+      past.push(present as S)
+      present = newPresent
+      return {
+        past: past,
+        future,
+        present: newPresent
+      }
+    })
 
     this.logEnd()
 
-    return this.present
+    return this.isActionDataValid(result) ? this.present : result
   }
 
   // 清除  
@@ -149,9 +187,13 @@ export default class UndoHistory<S=any> {
       this.logEnd()
       return CAN_NOT_DEALING
     } 
-    this.feature = []
-    this.past = [] 
-    this.present = DEFAULT_PRESENT_DATA
+    this.filter(ActionTypes.CLEAR_HISTORY, () => {
+      return {
+        past: [] as S[],
+        future: [] as S[],
+        present: DEFAULT_PRESENT_DATA as any 
+      }
+    })
 
     this.logEnd()
 
@@ -164,22 +206,29 @@ export default class UndoHistory<S=any> {
       this.logEnd()
       return CAN_NOT_DEALING
     }
-    let newFeature 
-    if(index > 0) {
-      const temp = this.feature.splice(0, index)
-      newFeature = temp.pop()
-      this.past.push(...temp)
-      this.present = newFeature
-    }else {
-      const temp = this.past.splice(this.past.length - 1, this.past.length - index - 1)
-      newFeature = temp.shift()
-      this.feature.unshift(...temp)
-      this.present = newFeature
-    }
+    let newFuture 
+    const result = this.filter(ActionTypes.JUMP, (past, future, present) => {
+      if(index > 0) {
+        const temp = future.splice(0, index)
+        newFuture = temp.pop()
+        past.push(...temp)
+        present = newFuture
+      }else {
+        const temp = past.splice(past.length - 1, past.length - index - 1)
+        newFuture = temp.shift()
+        future.unshift(...temp)
+        present = newFuture
+      }
+      return {
+        past,
+        future,
+        present: newFuture
+      }
+    })
 
     this.logEnd()
 
-    return newFeature
+    return this.isActionDataValid(result) ? newFuture : result
   }
 
   // 跳到指定past位置
@@ -189,14 +238,23 @@ export default class UndoHistory<S=any> {
       this.logEnd()
       return CAN_NOT_DEALING
     }
-    const temp = this.past.splice(index, this.past.length - index)
-    const newPresent = temp.shift()
-    this.feature.unshift(...temp)
-    this.present = newPresent
+
+    let newPresent
+
+    const result = this.filter(ActionTypes.JUMP_TO_PAST, (past, future) => {
+      const temp = past.splice(index, this.past.length - index)
+      newPresent = temp.shift()
+      future.unshift(...temp)
+      return {
+        past,
+        future,
+        present: newPresent as S 
+      }
+    })
 
     this.logEnd()
 
-    return newPresent
+    return this.isActionDataValid(result) ? newPresent : result
   }
 
   // 跳到指定future位置
@@ -206,14 +264,22 @@ export default class UndoHistory<S=any> {
       this.logEnd()
       return CAN_NOT_DEALING
     }
-    const temp = this.feature.splice(0, index + 1)
-    const newPresent = temp.pop()
-    this.past.push(...temp)
-    this.present = newPresent
+
+    let newPresent
+    const result = this.filter(ActionTypes.JUMP, (past, future) => {
+      const temp = future.splice(0, index + 1)
+      newPresent = temp.pop()
+      past.push(...temp)
+      return {
+        past,
+        future,
+        present: newPresent as S 
+      }
+    })
 
     this.logEnd()
 
-    return newPresent
+    return this.isActionDataValid(result) ? newPresent : result
   }
 
 }

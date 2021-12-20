@@ -156,9 +156,10 @@
 
     constructor(props) {
       super(props, {
-        filter(action, currentState) {
-          return action !== ActionTypes.ENQUEUE || currentState.present.counter % 5 !== 0
-        }
+        filter(action, _, prevState) {
+          return action !== ActionTypes.ENQUEUE || (prevState.present.counter % 5 !== 0)
+        },
+        debug: true 
       })
     }
 
@@ -307,3 +308,5 @@
 | JUMP_TO_FUTURE  | 跳到未来指定位置 |
 | CLEAR_HISTORY  | 清除历史 |
 | ENQUEUE  | 添加数据 |
+
+- 可以直接使用内置的`includeFilter`和`excludeFilter`方法做对应的筛选。  
