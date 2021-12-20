@@ -95,16 +95,20 @@ export default class WrapperComponent<P = {}, S = {}, SS = any, C extends object
         const [ key, history ] = entry
         const result = action(history)
         historyResult.push(result)
-        stateMap[key] = result 
+        if(history.isActionDataValid(result)) stateMap[key] = result 
       })
       this.internalSetState(stateMap, realCallback)
       return historyResult
     }else {
       const undoTarget = this.undoHistories.get(realKey as keyof C)
       const result = action(undoTarget)
-      this.internalSetState({
-        [realKey]: result 
-      }, realCallback)
+      if(undoTarget?.isActionDataValid(result)) {
+        this.internalSetState({
+          [realKey]: result 
+        }, realCallback)
+      }else {
+        realCallback
+      }
       return result 
     }
   }

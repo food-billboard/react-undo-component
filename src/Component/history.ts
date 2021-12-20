@@ -51,13 +51,19 @@ export default class UndoHistory<S=any> {
     })  
   }
 
+  public isActionDataValid(value: any) {
+    return value !== CAN_NOT_DEALING
+  }
+
   public enqueue(state: S, prevState?: S) {
+    const { limit } = this.config
     this.logStart(ActionTypes.ENQUEUE)
     this.debug.log("enqueue the state")
     this.debug.log("previous state is: ", prevState)
     this.debug.log("target state is: ", state)
     const realPrevState = prevState ?? this.present
     this.present = state 
+    if(!!~limit && this.past.length + this.feature.length >= limit) this.past.shift()
     this.past.push(prevState)
 
     this.logEnd()

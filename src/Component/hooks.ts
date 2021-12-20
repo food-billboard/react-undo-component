@@ -20,10 +20,6 @@ export default function useRedo<S = any>(initialState: S | (() => S), configurat
 
   const undoHistory = new UndoHistory<S>(configuration)
 
-  const present = useMemo(() => {
-    return undoHistory.state
-  }, [undoHistory])
-
   const internalSetState = useCallback((state: SetStateAction<S>) => {
     setState(prev => {
       let realState: S 
@@ -38,7 +34,7 @@ export default function useRedo<S = any>(initialState: S | (() => S), configurat
   }, [])
 
   const unNillAndUpdate = (state: HistoryReturnType<S>) => {
-    if(state !== undefined && state !== CAN_NOT_DEALING) setState(state)
+    if(state !== undefined && undoHistory.isActionDataValid(state)) setState(state as S)
   }
 
   const undo = useCallback(() => {
