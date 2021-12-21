@@ -1,4 +1,4 @@
-import { useCallback, useState, SetStateAction, useMemo, useEffect } from 'react'
+import { useCallback, useState, SetStateAction, useEffect } from 'react'
 import UndoHistory from './history'
 import { DEFAULT_PRESENT_DATA, CAN_NOT_DEALING } from './constants'
 import { HookProps } from './type'

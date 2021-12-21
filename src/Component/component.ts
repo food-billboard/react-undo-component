@@ -31,6 +31,7 @@ export default class WrapperComponent<P = {}, S = {}, SS = any, C extends object
         return realState
       }, () => {
         this.noteState(realState === null ? realState : this.state, prevState)
+        callback?.()
       })
     }
 
