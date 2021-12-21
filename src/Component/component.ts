@@ -206,7 +206,7 @@ export default class WrapperComponent<P = {}, S = {}, SS = any, C extends object
   public jumpToFuture4target(index: number, key: keyof C): ReturnUndoType<C>; 
   public jumpToFuture4target(index: number, ): ReturnUndoType<C>[];
   public jumpToFuture4target(index: number, key?: keyof C, callback?: () => void) {
-    const result = this.historyActionCommon((history) => {
+    const result = this.historyActionCommon<ReturnUndoType<C>>((history) => {
       return history?.jumpToFuture(index)
     }, key, callback)
     return result 

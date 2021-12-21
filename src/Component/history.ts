@@ -135,49 +135,12 @@ export default class UndoHistory<S=any> {
 
   // 后退
   undo() {
-    this.logStart(ActionTypes.UNDO)
-    if(!this.actionCan(ActionTypes.UNDO)) {
-      this.logEnd()
-      return CAN_NOT_DEALING
-    }
-
-    const result = this.filter(ActionTypes.UNDO, (past, future, present) => {
-      const newPresent = past.pop()
-      future.unshift(present as S)
-      return {
-        past: past,
-        future,
-        present: newPresent
-      }
-    })
-
-    this.logEnd()
-
-    return this.isActionDataValid(result) ? this.present : result
+    return this.commonAction(ActionTypes.UNDO, this.internalJump.bind(this, -1))
   }
 
   // 前进
   redo() {
-    this.logStart(ActionTypes.REDO)
-    if(!this.actionCan(ActionTypes.REDO)) {
-      this.logEnd()
-      return CAN_NOT_DEALING
-    }
-
-    const result = this.filter(ActionTypes.REDO, (past, future, present) => {
-      const newPresent = future.shift()
-      past.push(present as S)
-      present = newPresent
-      return {
-        past: past,
-        future,
-        present: newPresent
-      }
-    })
-
-    this.logEnd()
-
-    return this.isActionDataValid(result) ? this.present : result
+    return this.commonAction(ActionTypes.REDO, this.internalJump.bind(this, 1))
   }
 
   // 清除  
@@ -201,85 +164,89 @@ export default class UndoHistory<S=any> {
 
   // 前进或后退指定步数
   jump(index: number) {
-    this.logStart(ActionTypes.JUMP)
-    if(!this.actionCan(ActionTypes.JUMP, index)) {
-      this.logEnd()
-      return CAN_NOT_DEALING
-    }
-    let newFuture 
-    const result = this.filter(ActionTypes.JUMP, (past, future, present) => {
-      if(index > 0) {
-        const temp = future.splice(0, index)
-        newFuture = temp.pop()
-        past.push(...temp)
-        present = newFuture
-      }else {
-        const temp = past.splice(past.length - 1, past.length - index - 1)
-        newFuture = temp.shift()
-        future.unshift(...temp)
-        present = newFuture
-      }
-      return {
-        past,
-        future,
-        present: newFuture
-      }
-    })
-
-    this.logEnd()
-
-    return this.isActionDataValid(result) ? newFuture : result
+    return this.commonAction(ActionTypes.JUMP, this.internalJump.bind(this, index), index)
   }
 
   // 跳到指定past位置
   jumpToPast(index: number) {
-    this.logStart(ActionTypes.JUMP_TO_PAST)
-    if(!this.actionCan(ActionTypes.JUMP_TO_PAST, index)) {
-      this.logEnd()
-      return CAN_NOT_DEALING
-    }
-
-    let newPresent
-
-    const result = this.filter(ActionTypes.JUMP_TO_PAST, (past, future) => {
-      const temp = past.splice(index, this.past.length - index)
-      newPresent = temp.shift()
-      future.unshift(...temp)
-      return {
-        past,
-        future,
-        present: newPresent as S 
-      }
-    })
-
-    this.logEnd()
-
-    return this.isActionDataValid(result) ? newPresent : result
+    return this.commonAction(ActionTypes.JUMP_TO_PAST, this.internalJumpToPast.bind(this, index), index)
   }
 
   // 跳到指定future位置
   jumpToFuture(index: number) {
-    this.logStart(ActionTypes.JUMP_TO_FUTURE)
-    if(!this.actionCan(ActionTypes.JUMP_TO_FUTURE, index)) {
+    return this.commonAction(ActionTypes.JUMP_TO_FUTURE, this.internalJumpToFuture.bind(this, index), index)
+  }
+
+  private commonAction = (actionType: ActionTypes, action: any, index?: number) => {
+    this.logStart(actionType)
+    if(!this.actionCan(actionType, index)) {
       this.logEnd()
       return CAN_NOT_DEALING
     }
 
-    let newPresent
-    const result = this.filter(ActionTypes.JUMP, (past, future) => {
-      const temp = future.splice(0, index + 1)
-      newPresent = temp.pop()
-      past.push(...temp)
-      return {
-        past,
-        future,
-        present: newPresent as S 
-      }
+    let returnData 
+
+    const result = this.filter(actionType, (...args) => {
+      const { returnData: customReturnData, ...historyData } = action(...args)
+      returnData = customReturnData
+      return historyData
     })
 
     this.logEnd()
 
-    return this.isActionDataValid(result) ? newPresent : result
+    return this.isActionDataValid(result) ? returnData : result 
+
+  }
+
+  private internalJumpToPast(index: number, past: S[], future: S[], present: S) {
+    const newPast = past.slice(0, index)
+    const newFuture = [
+      ...past.slice(index + 1),
+      present,
+      ...future
+    ]
+    const newPresent = past[index]
+
+    return {
+      past: newPast,
+      future: newFuture,
+      present: newPresent as S,
+      returnData: newPresent
+    }
+  }
+
+  private internalJumpToFuture(index: number, past: S[], future: S[], present: S) {
+    const newPast = [
+      ...past,
+      present,
+      ...future.slice(0, index)
+    ]
+    const newPresent = future[index]
+    const newFuture = future.slice(index + 1)
+    return {
+      past: newPast,
+      future: newFuture,
+      present: newPresent as S,
+      returnData: newPresent as S 
+    }
+  }
+
+  private internalJump(index: number, past: S[], future: S[], present: S) {
+    let method 
+    let targetIndex = 0 
+    if(index > 0) {
+      method = this.internalJumpToFuture
+      targetIndex = index - 1
+    }else if(index < 0){
+      method = this.internalJumpToPast
+      targetIndex = past.length + index 
+    }
+    return method?.(targetIndex, past, future, present) || {
+      past,
+      future,
+      present,
+      returnData: present
+    }
   }
 
 }

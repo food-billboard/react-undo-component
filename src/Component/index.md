@@ -271,6 +271,11 @@
         <div>
           <button onClick={() => this.undo()}>undo</button>
           <button onClick={() => this.redo()}>redo</button>
+          <button onClick={() => this.jump(3)}>jump+3</button>
+          <button onClick={() => this.jump(-3)}>jump-3</button>
+          <button onClick={() => this.jumpToPast(2)}>jumpToPast&2</button>
+          <button onClick={() => this.jumpToFuture(2)}>jumpToFuture&2</button>
+          <button onClick={() => this.clear()}>clear</button>
           <button onClick={this.handleAdd}>+1</button>
           <div>{counter}</div>
         </div>
