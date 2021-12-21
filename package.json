@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "description": "React状态控制组件",
   "scripts": {
+    "preinstall": "npx only-allow yarn",
     "prepare": "husky install",
     "_postinstall": "husky install",
     "prepublishOnly": "pinst --disable",
@@ -63,6 +64,7 @@
   "devDependencies": {
     "@commitlint/cli": "^15.0.0",
     "@commitlint/config-angular": "^15.0.0",
+    "@types/jest": "^27.0.3",
     "@umijs/test": "^3.0.5",
     "cross-env": "^7.0.3",
     "cz-conventional-changelog": "^3.3.0",
