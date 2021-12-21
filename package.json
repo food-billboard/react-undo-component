@@ -11,7 +11,7 @@
     "start": "dumi dev",
     "docs:build": "dumi build",
     "docs:deploy": "gh-pages -d docs-dist",
-    "build": "cross-env BUILD_TYPE=lib father-build && cross-env BUILD_TYPE=es father-build",
+    "build": "cross-env BUILD_TYPE=lib father-build && cross-env BUILD_TYPE=es father-build && cross-env BUILD_TYPE=umd father-build",
     "deploy": "np",
     "release": "npm run build && npm publish",
     "prettier": "prettier --write \"**/*.{js,jsx,tsx,ts,less,md,json}\"",

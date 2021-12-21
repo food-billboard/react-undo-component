@@ -2,62 +2,35 @@ const type = process.env.BUILD_TYPE;
 
 let config = {};
 
-if (type === 'lib') {
+if(type === "umd") {
   config = {
-    extractCSS: true,
+    umd: {
+      file: 'react-undo-component',
+      name: 'ReactUndoComponent',
+      globals: {
+        react: 'React',
+      },
+      sourcemap: true,
+    },
+    nodeResolveOpts: {
+      browser: true,
+    },
+    runtimeHelpers: true,
+    externalsExclude: ['react/jsx-runtime'],
+  }
+
+}else if (type === 'lib') {
+  config = {
     esm: false,
     cjs: 'babel',
-    lessInBabelMode: true,
-    extraBabelPlugins: [
-      [
-        'babel-plugin-import',
-        {
-          libraryName: 'antd',
-          libraryDirectory: 'lib',
-          style: true,
-        },
-        'antd',
-      ],
-      [
-        'babel-plugin-import',
-        {
-          libraryName: 'lodash',
-          libraryDirectory: '',
-          camel2DashComponentName: false, // default: true
-        },
-        'lodash',
-      ],
-    ],
   };
 } else {
   config = {
-    extractCSS: true,
     esm: {
       type: 'babel',
       importLibToEs: true,
     },
-    lessInBabelMode: true,
     cjs: false,
-    extraBabelPlugins: [
-      [
-        'babel-plugin-import',
-        {
-          libraryName: 'antd',
-          libraryDirectory: 'es',
-          style: true,
-        },
-        'antd',
-      ],
-      [
-        'babel-plugin-import',
-        {
-          libraryName: 'lodash',
-          libraryDirectory: '',
-          camel2DashComponentName: false, // default: true
-        },
-        'lodash',
-      ],
-    ],
   };
 }
 
