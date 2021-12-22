@@ -1,6 +1,5 @@
 import React, { useRef, useEffect } from 'react'
 import { mount, shallow } from 'enzyme';
-import { act } from 'react-dom/test-utils'
 import { useUndo } from '../src'
 
 describe("react hooks test", function() {

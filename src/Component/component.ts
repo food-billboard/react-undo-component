@@ -8,7 +8,7 @@ type ReturnUndoVoidType = typeof CAN_NOT_DEALING | void | undefined
 
 export default class WrapperComponent<P = {}, S = {}, SS = any, C extends object = {}> extends Component<P, S, SS> {
 
-  constructor(props: P, configuration: ComponentProps<C>) {
+  constructor(props: P, configuration: ComponentProps<C>={}) {
     super(props)
 
     this.configuration = {
@@ -222,7 +222,6 @@ export default class WrapperComponent<P = {}, S = {}, SS = any, C extends object
   public get history() {
     if(this.isObserverAll) return this.undoHistory
     return this.undoHistories
-
   }
 
 }
