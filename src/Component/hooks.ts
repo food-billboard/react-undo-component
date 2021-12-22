@@ -7,13 +7,14 @@ export type HistoryReturnType<T> = undefined | typeof CAN_NOT_DEALING | T
 
 export type SetStateType<T> = (state: ((prevState: T) => T) | T) => void
 
-export default function useRedo<S = any>(initialState: S | (() => S), configuration: HookProps<S>): [S | undefined | typeof DEFAULT_PRESENT_DATA, SetStateType<S>, {
+export default function useRedo<S = any>(initialState: S | (() => S), configuration: HookProps<S>={}): [S | undefined | typeof DEFAULT_PRESENT_DATA, SetStateType<S>, {
   undo: () => HistoryReturnType<S>
   redo: () => HistoryReturnType<S>
   clear: () => typeof CAN_NOT_DEALING | void 
   jump: (index: number) =>  HistoryReturnType<S>
   jumpToPast: (index: number) =>  HistoryReturnType<S>
   jumpToFuture: (index: number) =>  HistoryReturnType<S>
+  history: UndoHistory<S>
 }] {
 
   const [ state, setState ] = useState<S>(initialState)
@@ -50,7 +51,9 @@ export default function useRedo<S = any>(initialState: S | (() => S), configurat
   }, [])
 
   const clear = useCallback(() => {
-    return undoHistory.clear()
+    const result = undoHistory.clear()
+    unNillAndUpdate(result || undoHistory.state as any)
+    return result 
   }, [])
 
   const jump = useCallback((index: number) => {
@@ -85,7 +88,8 @@ export default function useRedo<S = any>(initialState: S | (() => S), configurat
       clear,
       jump,
       jumpToFuture,
-      jumpToPast
+      jumpToPast,
+      history: undoHistory
     }
   ]
 }

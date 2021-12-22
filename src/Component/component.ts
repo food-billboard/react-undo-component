@@ -219,4 +219,10 @@ export default class WrapperComponent<P = {}, S = {}, SS = any, C extends object
     return result 
   }
 
+  public get history() {
+    if(this.isObserverAll) return this.undoHistory
+    return this.undoHistories
+
+  }
+
 }
