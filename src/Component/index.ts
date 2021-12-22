@@ -7,13 +7,13 @@ export {
   ActionTypes
 }
 
-export function includeFilter(action: keyof typeof ActionTypes | keyof typeof ActionTypes[]) {
+export function includeFilter(action: ActionTypes | ActionTypes[]) {
   return Array.isArray(action) ? action : [action]
 }
 
-export function excludeFilter(action: keyof typeof ActionTypes | keyof typeof ActionTypes[]) {
+export function excludeFilter(action: ActionTypes | ActionTypes[]): ActionTypes[] {
   const result = Object.keys(ActionTypes)
   const exclude = Array.isArray(action) ? action : [action]
 
-  return result.filter(item => !exclude.includes(item as keyof typeof ActionTypes))
+  return result.filter(item => !exclude.includes(item as ActionTypes)) as ActionTypes[]
 }

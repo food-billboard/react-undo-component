@@ -12,7 +12,7 @@ export interface HookProps<S=any> {
   limit?: number 
 
   // 自定义筛选需要保存的状态
-  filter?: (action: ActionTypes, currentState: StateType<S>, previousHistory: StateType<S>) => boolean 
+  filter?: ActionTypes[] | ((action: ActionTypes, currentState: StateType<S>, previousHistory: StateType<S>) => boolean)
 
   // 是否打印状态  
   debug?: boolean 

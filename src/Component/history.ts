@@ -14,6 +14,7 @@ export default class UndoHistory<S=any> {
       past: S[] 
       future: S[]
     }>(!!this.config.debug)
+
     if(initialValue !== undefined) this.initState(initialValue)
   }
 
@@ -23,9 +24,18 @@ export default class UndoHistory<S=any> {
   private past: (S | undefined)[] = []
   private present?: S | typeof DEFAULT_PRESENT_DATA = DEFAULT_PRESENT_DATA
   private debug!: Debug
+  private initialValue: S | typeof DEFAULT_PRESENT_DATA = DEFAULT_PRESENT_DATA
 
   public get state() {
     return this.present
+  }
+
+  public get history() {
+    return {
+      present: this.present,
+      past: this.past,
+      future: this.future
+    }
   }
 
   private isNumber(value: any) {
@@ -90,7 +100,7 @@ export default class UndoHistory<S=any> {
       this.past = past
       this.future = future
       this.present = present
-      return 
+      return present
     }
     this.debug.log("the action is not performance because filter")
     return CAN_NOT_DEALING
@@ -115,10 +125,10 @@ export default class UndoHistory<S=any> {
         valid = this.past.length >= 1
         break 
       case "JUMP_TO_FUTURE":
-        valid = this.isNumber(index) && (index as number) >= 0 && this.future.length >= (index as number) + 1
+        valid = this.isNumber(index) && (index as number) >= 0 && this.future.length >= (index as number)
         break 
       case "JUMP_TO_PAST":
-        valid = this.isNumber(index) && (index as number) >= 0 && this.past.length >= (index as number) + 1
+        valid = this.isNumber(index) && (index as number) >= 0 && this.past.length >= (index as number)
         break 
     }
     
@@ -129,8 +139,9 @@ export default class UndoHistory<S=any> {
   }
 
   // 设置初始值
-  initState(value: S) {
-    this.present = value 
+  initState(value: S, defaultOnly?: boolean) {
+    this.initialValue = value 
+    if(!defaultOnly) this.present = value 
   }
 
   // 后退
@@ -150,11 +161,12 @@ export default class UndoHistory<S=any> {
       this.logEnd()
       return CAN_NOT_DEALING
     } 
+
     this.filter(ActionTypes.CLEAR_HISTORY, () => {
       return {
         past: [] as S[],
         future: [] as S[],
-        present: DEFAULT_PRESENT_DATA as any 
+        present: this.initialValue as any 
       }
     })
 
