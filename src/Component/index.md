@@ -294,6 +294,104 @@
 
 ## API 
 
+### defined method 
+
+#### hooks 
+
+**useUndo**  
+```js
+  const [ state, setState, {
+    undo,
+    redo,
+    history,
+    jump,
+    jumpToPast,
+    jumpToFuture
+  } ] = useUndo(0, { /*config*/ })
+```
+##### undo  
+状态回退  
+`undo()`
+
+##### redo 
+状态前进  
+`redo()`
+
+##### clear 
+清除历史记录  
+`clear()`  
+
+##### jump  
+前进(正数)或后退(负数)  
+`jump(1)`  
+
+##### jumpToPast  
+跳转到历史指定位置  
+`jumpToPast(0)` 
+##### jumpToFuture
+跳转到未来指定位置  
+`jumpToFuture(0)` 
+##### history  
+获取`history`实例  
+
+#### component 
+
+下面所有方法都存在一个`callback`参数，为`setState`的第二参数  
+
+- 以下为全量监听时使用  
+##### undo  
+同上  
+`undo(callback?)`  
+
+##### redo 
+同上  
+`redo(callback?)`  
+
+##### clear 
+同上  
+`redo(callback?)`  
+
+##### jump  
+同上  
+`jump(1, callback?)`  
+
+##### jumpToPast  
+同上  
+`jumpToPast(1, callback?)`  
+##### jumpToFuture
+同上  
+`jumpToFuture(1, callback?)`  
+##### history  
+同上  `History`
+
+- 以下为指定监听时使用，用法基本与上面一致，多了一个参数`key`，为指定需要操作的`state`名称，不填则操作全部`observer`状态    
+
+##### undo4target  
+同上  
+`undo4target(key?, callback?)`  
+
+##### redo4target 
+同上  
+`redo4target(key?, callback?)`  
+
+##### clear4target 
+同上  
+`clear4target(key?, callback?)`  
+
+##### jump4target  
+同上  
+`jump4target(1, key?, callback?)`  
+
+##### jumpToPast4target  
+同上  
+`jumpToPast4target(1, key?, callback?)`  
+##### jumpToFuture4target
+前进指定步数  
+`jumpToFuture4target(1, key?, callback?)`  
+#### history  
+同上  `Map<string, History>`  
+### config 
+
 |  属性   | 说明  | 类型  | 默认值  |
 |  ----  | ----  | ----  | ----  |
 | limit  | 限制保存的记录数量，设置为`-1`则不限制 | `number` | - |
@@ -315,3 +413,196 @@
 | ENQUEUE  | 添加数据 |
 
 - 可以直接使用内置的`includeFilter`和`excludeFilter`方法做对应的筛选。  
+
+## 注意事项  
+### 关于`clear`方法  
+`class`组件与`hooks`某些情况下可能表现不同  
+`class`组件的`clear`与`clear4target`方法表现也不同  
+具体如下: 
+  1. hooks 
+```js | pure 
+  // 1. when set the initialValue 
+  const [state, setState, {
+    clear 
+  }] = useUndo(0)
+
+  clear()  
+
+  // the state will be the initialValue 
+  console.log(state) // ->> 0
+
+  // -------------------------------
+
+  // 2. when ignore the initialValue 
+  const [ state, setState ] = useUndo()
+
+  clear() 
+
+  // the state will be the default initialValue for string "__DEFAULT_PRESENT_DATA__"
+  console.log(state) // -->> "__DEFAULT_PRESENT_DATA__"
+
+```
+
+  2. class  
+  - 全量监听
+```js | pure 
+
+class Template extends Component {
+
+  constructor(props) {
+    super(props)
+  }
+
+  state = {
+    counter: 0
+  }
+
+  clearState = () => {
+
+    // when not set the initialValue 
+    this.clear() 
+
+    // the state will not be changed 
+    console.log(this.state.counter) // -->> 0
+
+    // ---------------
+    
+    // set the initialValue 
+    this.history.initState({
+      counter: 1
+    })
+
+    this.clear() 
+
+    // clear the history and the state will be the initialValue 
+    console.log(this.state.counter) // --> 1
+
+  } 
+
+  render() {
+    const { counter } = this.state 
+    return (
+      <div>
+        <span>counter: {counter}</span>
+        <span onClick={this.clearState}>clear</span>
+      </div>
+    )
+  }
+
+}
+
+```
+  - 部分监听  
+```js | pure 
+
+class Template extends Component {
+
+  constructor(props) {
+    // just observer the state of counter 
+    super(props, {
+      observer: ["counter"]
+    })
+  }
+
+  state = {
+    counter: 0,
+    anotherCounter: 0
+  }
+
+  clearState = () => {
+
+    // when not set the initialValue 
+    this.clear4target("counter") 
+
+    // the state will not be changed 
+    console.log(this.state) // -->> { anotherCounter: 0, counter: "__DEFAULT_PRESENT_DATA__" }
+
+    // ---------------
+    
+    // set the initialValue 
+    const histories = this.history // Map 
+    const counterHistory = histories.get("counter") 
+    counterHistory.initState(1)
+
+    this.clear4target("counter") 
+
+    // clear the history and the state will be the initialValue 
+    console.log(this.state) // -->> { anotherCounter: 0, counter: 1 }
+
+  } 
+
+  render() {
+    const { counter } = this.state 
+    return (
+      <div>
+        <span>counter: {counter}</span>
+        <span onClick={this.clearState}>clear</span>
+      </div>
+    )
+  }
+
+}
+
+```
+
+### 关于history  
+- history是状态控制的工具方法，在`hooks`和`component`组件中都对外暴露了它的实例，你可以通过直接操作他们来完成状态的切换。  
+当然他不会同步到`react`组件的状态当中去。  
+- 你也可以使用`history`完成自己的状态控制。  
+- 在`component`组件当中，与上面的`clear`方法一样，存在**全量监听**和**指定监听**  
+  - 当设置`全量监听`时，通过`this.history`返回的是一个包含整个`state`的实例。  
+  - 当设置`指定监听`时，通过`this.history`返回的是一个`Map`对象，`key`为`observer`指定的值，`value`为对应的`history`实例。  
+
+### 关于失败的情况  
+在操作组件历史状态的时候，有时会出现一些不合理的操作，比如`past`当中没有记录了，但是调用了`undo`方法，这就是不合理的情况，所以在判断是否合理时，可以通过判断返回值是否为`"__CAN_NOT_DEALING__"`，当出现这个值时，即为不合理的操作。   
+你也可以使用`history`示例的`isActionDataValid`方法判断响应值是否合理。     
+
+### 关于callback  
+在`component`中所有的方法都包含了一个`callback`参数，其为`setState`的第二参数，但是因为可能会出现`history`操作不合理的情况。  
+当出现不合理情况时，`callback`方法是不会被调用的，所以尽量不要使用它来作为状态改变的依据。  
+当需要做状态改变判断时，可以通过和方法返回值配合使用来进行判断，具体请看下方示例：    
+```js | pure 
+  import React from 'react' 
+  import { Component } from 'react-undo-component'
+
+  class TemplateUndoComponent extends Component {
+
+    state = {
+      counter: 1
+    }
+
+    handleAdd = () => {
+      this.setState(prev => {
+        return {
+          counter: prev.counter + 1
+        }
+      })
+    }
+
+    handleUndo = () => {
+      await new Promise((resolve, reject) => {
+        const result = this.undo(resolve)
+        // Judge whether the value is "__CAN_NOT_DEALING__"
+        if(!this.history.isActionDataValid(result)) {
+          reject()
+        }
+      })
+    }
+
+    render() {
+
+      const { counter } = this.state 
+
+      return (
+        <div>
+          counter: {counter}
+          <button onClick={this.handleAdd}>+1</button>
+          <button onClick={this.handleUndo}>undo</button>
+        </div>
+      )
+
+    }
+
+  }
+
+```
