@@ -3,6 +3,7 @@
   "name": "react-undo-component",
   "version": "1.0.0",
   "description": "React状态控制组件",
+  "homepage": "https://food-billboard.github.io/react-undo-component/",
   "scripts": {
     "preinstall": "npx only-allow yarn",
     "prepare": "husky install",
