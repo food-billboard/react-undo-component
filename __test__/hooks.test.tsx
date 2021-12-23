@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react'
-import { mount, shallow } from 'enzyme';
+import { mount } from 'enzyme';
 import { useUndo } from '../src'
 
 describe("react hooks test", function() {

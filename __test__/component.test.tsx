@@ -1,11 +1,42 @@
 import React from 'react'
-import { mount, shallow } from 'enzyme';
+import { shallow } from 'enzyme';
 import { Component } from '../src'
+import { DEFAULT_PRESENT_DATA } from '../src/Component/constants'
 import UndoHistory from '../src/Component/history'
 
 class DefaultUndoComponent extends Component<any, {
   counter: number
 }> {
+
+  state = {
+    counter: 0
+  }
+
+  setData = async (value: number) => {
+    return new Promise((resolve) => {
+      this.setState({
+        counter: value
+      }, resolve.bind(this, undefined))
+    })
+  }
+
+  render() {
+    return (
+      <div></div>
+    )
+  }
+
+}
+
+class ObserverUndoComponent extends Component<any, {}, any, {
+  counter: number
+}> {
+
+  constructor(props) {
+    super(props, {
+      observer: ["counter"]
+    })
+  }
 
   state = {
     counter: 0
@@ -163,52 +194,346 @@ describe("react component test", function() {
 
     })
 
-    it('undo4Target test', () => {
+    it('undo4Target test', (done) => {
+
+      const wrapper = shallow(<ObserverUndoComponent />)
+
+      wrapper.instance().setData(1)
+      .then(_ => {
+        expect(wrapper.state().counter).toEqual(1);
+
+        const history = wrapper.instance().history
+        const targetHistory = history.get("counter")
+
+        expect(targetHistory.state).toEqual(1)
+
+        wrapper.instance().undo4target("counter", () => {
+          expect(wrapper.state().counter).toEqual(0);
+    
+          expect(targetHistory.state).toEqual(0)
+
+          done()
+        })
+      })
 
     })
 
-    it(`redo test`, () => {
+    it(`redo test`, (done) => {
 
-    })
+      const wrapper = shallow(<DefaultUndoComponent />)
 
-    it('redo4Target test', () => {
+      wrapper.instance().setData(1)
+      .then(_ => {
+        expect(wrapper.state().counter).toEqual(1);
+    
+        expect((wrapper.instance().history as UndoHistory).state.counter).toEqual(1)
 
-    })
+        wrapper.instance().undo(() => {
+          expect(wrapper.state().counter).toEqual(0);
+    
+          expect((wrapper.instance().history as UndoHistory).state.counter).toEqual(0)
 
-    it(`jump test`, () => {
-
-    })
-
-    it(`jump4target test`, () => {
-
-    })
-
-    it(`jumpToPast test`, () => {
-
-    })
-
-    it(`jumpToPast4target test`, () => {
-
-    })
-
-    it(`jumpToFuture test`, () => {
-
-    })
-
-    it(`jumpToFuture4target test`, () => {
-
-    })
-
-    it(`clear test`, () => {
-
-    })
-
-    it(`clear4target test`, () => {
-
-    })
-
-    it(`initState test`, () => {
+          wrapper.instance().redo(() => {
+            expect(wrapper.state().counter).toEqual(1);
       
+            expect((wrapper.instance().history as UndoHistory).state.counter).toEqual(1)
+  
+            done()
+  
+          })
+
+        })
+      })
+
+    })
+
+    it('redo4Target test', (done) => {
+
+      const wrapper = shallow(<ObserverUndoComponent />)
+
+      wrapper.instance().setData(1)
+      .then(_ => {
+        expect(wrapper.state().counter).toEqual(1);
+
+        const history = wrapper.instance().history
+        const targetHistory = history.get("counter")
+
+        expect(targetHistory.state).toEqual(1)
+
+        wrapper.instance().undo4target("counter", () => {
+          expect(wrapper.state().counter).toEqual(0);
+    
+          expect(targetHistory.state).toEqual(0)
+
+          wrapper.instance().redo4target("counter", () => {
+            expect(wrapper.state().counter).toEqual(1);
+      
+            expect(targetHistory.state).toEqual(1)
+  
+            done()
+          })
+        })
+      })
+
+    })
+
+    it(`jump test`, (done) => {
+
+      const wrapper = shallow(<DefaultUndoComponent />)
+
+      wrapper.instance().setData(1)
+      .then(_ => {
+        expect(wrapper.state().counter).toEqual(1);
+    
+        expect((wrapper.instance().history as UndoHistory).state.counter).toEqual(1)
+
+        return wrapper.instance().setData(2)
+
+      })
+      .then(_ => {
+        expect(wrapper.state().counter).toEqual(2);
+    
+        expect((wrapper.instance().history as UndoHistory).state.counter).toEqual(2)
+
+        wrapper.instance().jump(-1, () => {
+          expect(wrapper.state().counter).toEqual(1);
+    
+          expect((wrapper.instance().history as UndoHistory).state.counter).toEqual(1)
+
+          done()
+
+        })
+      })
+
+    })
+
+    it(`jump4target test`, (done) => {
+      const wrapper = shallow(<ObserverUndoComponent />)
+
+      wrapper.instance().setData(1)
+      .then(_ => {
+        expect(wrapper.state().counter).toEqual(1);
+
+        const history = wrapper.instance().history
+        const targetHistory = history.get("counter")
+
+        expect(targetHistory.state).toEqual(1)
+
+        return wrapper.instance().setData(2)
+
+      })
+      .then(_ => {
+        expect(wrapper.state().counter).toEqual(2);
+
+        const history = wrapper.instance().history
+        const targetHistory = history.get("counter")
+
+        expect(targetHistory.state).toEqual(2)
+
+        wrapper.instance().jump4target(-1, "counter", () => {
+          expect(wrapper.state().counter).toEqual(1);
+    
+          expect(targetHistory.state).toEqual(1)
+
+          done()
+        })
+      })
+    })
+
+    it(`jumpToPast test`, (done) => {
+      const wrapper = shallow(<DefaultUndoComponent />)
+
+      wrapper.instance().setData(1)
+      .then(_ => {
+        expect(wrapper.state().counter).toEqual(1);
+    
+        expect((wrapper.instance().history as UndoHistory).state.counter).toEqual(1)
+
+        wrapper.instance().jumpToPast(0, () => {
+          expect(wrapper.state().counter).toEqual(0);
+    
+          expect((wrapper.instance().history as UndoHistory).state.counter).toEqual(0)
+
+          done()
+        })
+      })
+    })
+
+    it(`jumpToPast4target test`, (done) => {
+      const wrapper = shallow(<ObserverUndoComponent />)
+
+      wrapper.instance().setData(1)
+      .then(_ => {
+        expect(wrapper.state().counter).toEqual(1);
+
+        const history = wrapper.instance().history
+        const targetHistory = history.get("counter")
+
+        expect(targetHistory.state).toEqual(1)
+
+        wrapper.instance().jumpToPast4target(0, "counter", () => {
+          expect(wrapper.state().counter).toEqual(0);
+    
+          expect(targetHistory.state).toEqual(0)
+
+          done()
+        })
+      })
+    })
+
+    it(`jumpToFuture test`, (done) => {
+
+      const wrapper = shallow(<DefaultUndoComponent />)
+
+      wrapper.instance().setData(1)
+      .then(_ => {
+        expect(wrapper.state().counter).toEqual(1);
+    
+        expect((wrapper.instance().history as UndoHistory).state.counter).toEqual(1)
+
+        wrapper.instance().undo(() => {
+          expect(wrapper.state().counter).toEqual(0);
+    
+          expect((wrapper.instance().history as UndoHistory).state.counter).toEqual(0)
+
+          wrapper.instance().jumpToFuture(0, () => {
+            expect(wrapper.state().counter).toEqual(1);
+      
+            expect((wrapper.instance().history as UndoHistory).state.counter).toEqual(1)
+  
+            done()
+  
+          })
+
+        })
+      })
+
+    })
+
+    it(`jumpToFuture4target test`, (done) => {
+      const wrapper = shallow(<ObserverUndoComponent />)
+
+      wrapper.instance().setData(1)
+      .then(_ => {
+        expect(wrapper.state().counter).toEqual(1);
+
+        const history = wrapper.instance().history
+        const targetHistory = history.get("counter")
+
+        expect(targetHistory.state).toEqual(1)
+
+        wrapper.instance().undo4target("counter", () => {
+          expect(wrapper.state().counter).toEqual(0);
+    
+          expect(targetHistory.state).toEqual(0)
+
+          wrapper.instance().jumpToFuture4target(0, "counter", () => {
+            expect(wrapper.state().counter).toEqual(1);
+      
+            expect(targetHistory.state).toEqual(1)
+  
+            done()
+          })
+        })
+      })
+    })
+
+    it(`clear test`, (done) => {
+      const wrapper = shallow(<DefaultUndoComponent />)
+
+      wrapper.instance().setData(1)
+      .then(_ => {
+        expect(wrapper.state().counter).toEqual(1);
+    
+        expect(wrapper.instance().history.state.counter).toEqual(1)
+        wrapper.instance().clear()
+        expect(wrapper.state().counter).toEqual(1);
+    
+        expect(wrapper.instance().history.state).toEqual(DEFAULT_PRESENT_DATA)
+
+        done()
+      })
+    })
+
+    it(`clear4target test`, (done) => {
+
+      const wrapper = shallow(<ObserverUndoComponent />)
+
+      wrapper.instance().setData(1)
+      .then(_ => {
+        expect(wrapper.state().counter).toEqual(1);
+
+        const history = wrapper.instance().history
+        const targetHistory = history.get("counter")
+
+        expect(targetHistory.state).toEqual(1)
+
+        wrapper.instance().clear4target("counter")
+
+        expect(wrapper.state().counter).toEqual(DEFAULT_PRESENT_DATA);
+    
+        expect(targetHistory.state).toEqual(DEFAULT_PRESENT_DATA)
+
+        done()
+
+      })
+
+    })
+
+    it(`initState test`, (done) => {
+      
+      class InitStateUndoComponent extends Component<any, {}, any, {
+        counter: number
+      }> {
+      
+        constructor(props) {
+          super(props)
+        }
+      
+        state = {
+          counter: 0
+        }
+
+        componentDidMount = () => {
+          (this.history as UndoHistory).initState({
+            counter: 0
+          }, true)
+        }
+      
+        setData = async (value: number) => {
+          return new Promise((resolve) => {
+            this.setState({
+              counter: value
+            }, resolve.bind(this, undefined))
+          })
+        }
+      
+        render() {
+          return (
+            <div></div>
+          )
+        }
+      
+      }
+
+      const wrapper = shallow(<InitStateUndoComponent />)
+
+      wrapper.instance().setData(1)
+      .then(_ => {
+        expect(wrapper.state().counter).toEqual(1);
+    
+        expect((wrapper.instance().history as UndoHistory).state.counter).toEqual(1)
+
+        wrapper.instance().clear(() => {
+          expect(wrapper.state().counter).toEqual(0);
+    
+          expect((wrapper.instance().history as UndoHistory).state.counter).toEqual(0)
+
+          done()
+
+        })
+      })
+
     })
 
   })

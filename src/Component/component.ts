@@ -49,6 +49,14 @@ export default class WrapperComponent<P = {}, S = {}, SS = any, C extends object
     this.undo4target = this.undo4target.bind(this)
     this.redo = this.redo.bind(this)
     this.redo4target = this.redo4target.bind(this)
+    this.clear = this.clear.bind(this)
+    this.clear4target = this.clear4target.bind(this)
+    this.jump = this.jump.bind(this)
+    this.jump4target = this.jump4target.bind(this)
+    this.jumpToFuture = this.jumpToFuture.bind(this)
+    this.jumpToFuture4target = this.jumpToFuture4target.bind(this)
+    this.jumpToPast = this.jumpToPast.bind(this)
+    this.jumpToPast4target = this.jumpToPast4target.bind(this)
     this.noteState = this.noteState.bind(this)
   }
 
@@ -66,7 +74,9 @@ export default class WrapperComponent<P = {}, S = {}, SS = any, C extends object
 
   private originSetState!: Component["setState"]
   private internalSetState(state: any, callback?: () => void) {
-    if(!state) return 
+    if(!state) {
+      return
+    } 
     if(typeof state === "object") {
       this.originSetState(state, callback)
     }
@@ -108,7 +118,7 @@ export default class WrapperComponent<P = {}, S = {}, SS = any, C extends object
           [realKey]: result 
         }, realCallback)
       }else {
-        realCallback
+        realCallback?.()
       }
       return result 
     }
@@ -142,7 +152,7 @@ export default class WrapperComponent<P = {}, S = {}, SS = any, C extends object
 
   public undo(callback?: () => void) {
     const result = this.undoHistory?.undo() 
-    this.internalSetState(result, callback)
+    this.undoHistory.isActionDataValid(result) && this.internalSetState(result, callback)
     return result 
   }
 
@@ -157,21 +167,24 @@ export default class WrapperComponent<P = {}, S = {}, SS = any, C extends object
 
   public redo(callback?: () => void) {
     const result = this.undoHistory?.redo() 
-    this.internalSetState(result, callback)
+    this.undoHistory.isActionDataValid(result) && this.internalSetState(result, callback)
     return result 
   }
 
   public clear4target(key: keyof C): ReturnUndoVoidType; 
   public clear4target(): ReturnUndoVoidType[];
-  public clear4target(key?: keyof C) {
+  public clear4target(key?: keyof C, callback?: () => void) {
     const result = this.historyActionCommon<ReturnUndoVoidType>((history) => {
-      return history?.clear()
-    }, key)
+      const result = history?.clear()
+      return result === undefined ? history?.state : result
+    }, key, callback)
     return result 
   }
 
-  public clear() {
-    return this.undoHistory?.clear()
+  public clear(callback?: () => void) {
+    const result = this.undoHistory?.clear()
+    this.undoHistory.isActionDataValid(result) && this.internalSetState(this.undoHistory.state, callback)
+    return result 
   }
 
   public jump4target(index: number, key: keyof C): ReturnUndoType<C>; 
@@ -185,7 +198,7 @@ export default class WrapperComponent<P = {}, S = {}, SS = any, C extends object
 
   public jump(index: number, callback?: () => void) {
     const result = this.undoHistory?.jump(index)
-    this.internalSetState(result, callback)
+    this.undoHistory.isActionDataValid(result) && this.internalSetState(result, callback)
     return result 
   }
 
@@ -200,7 +213,7 @@ export default class WrapperComponent<P = {}, S = {}, SS = any, C extends object
 
   public jumpToPast(index: number, callback?: () => void) {
     const result = this.undoHistory?.jumpToPast(index)
-    this.internalSetState(result, callback)
+    this.undoHistory.isActionDataValid(result) && this.internalSetState(result, callback)
     return result 
   }
 
@@ -215,7 +228,7 @@ export default class WrapperComponent<P = {}, S = {}, SS = any, C extends object
 
   public jumpToFuture(index: number, callback?: () => void) {
     const result = this.undoHistory.jumpToFuture(index)
-    this.internalSetState(result, callback)
+    this.undoHistory.isActionDataValid(result) && this.internalSetState(result, callback)
     return result 
   }
 
