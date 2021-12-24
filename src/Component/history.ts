@@ -164,7 +164,7 @@ export default class UndoHistory<S=any> {
 
     this.logEnd()
 
-    return this.isActionDataValid(result) ? undefined : result 
+    return this.isActionDataValid(result) ? undefined : CAN_NOT_DEALING
 
   }
 
