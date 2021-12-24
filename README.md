@@ -1,8 +1,8 @@
 # react-undo-component
 React状态控制组件  
 
-## Demo  
-点我查看[demo](https://food-billboard.github.io/react-undo-component/)  
+## Docs  
+[demo](https://food-billboard.github.io/react-undo-component/)  
 
 ## 介绍  
 `react-undo-component`是一个用于控制`react`组件状态历史管理的工具库，支持`class`和`hooks`两种，可以对数据进行前进和后退的操作。  

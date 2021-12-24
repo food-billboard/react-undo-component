@@ -606,3 +606,34 @@ class Template extends Component {
   }
 
 ```
+
+### 关于component的setState  
+很多情况下，对于`setState`的值经常会有一些无用的更新，或者说将一些不在当前更新批次中的数据进行设置，比如说下面这个样子。  
+```js | pure 
+  class Template extends Component {
+
+    constructor(props) {
+      super(props, {
+        observer: ["counter"]
+      })
+    }
+
+    state = {
+      counter: 0,
+      anotherCounter: 1,
+    }
+
+    componentDidMount = () => {
+      const { counter, anotherCounter } = this.state 
+      this.setState({
+        // look at this
+        counter,
+        anotherCounter: anotherCounter + 1
+      })
+    }
+
+  }
+```
+经常会出现这样的情况，如果是全量监听，这可能并不是什么问题。  
+但如果是部分监听时，这样会让无用的数据添加到历史记录中。  
+- 这个时候可能需要通过添加自定义的`filter`来控制一些特殊情况，比如当前数据与更新的数据的值是相同时，不将其添加到历史记录中，这个可以查看上面的例子`筛选需要保存的历史记录`。  
