@@ -108,11 +108,7 @@ export default class UndoHistory<S=any> {
 
   private actionCan(type: keyof typeof ActionTypes, index?: number) {
     if(type === "CLEAR_HISTORY") return true 
-    // limit 
-    if(!!~this.config.limit && this.future.length + this.past.length > this.config.limit) {
-      this.debug.log(`${type} cannot be done because the history is limited`)
-      return false 
-    }
+
     let valid = false 
     switch(type) {
       case "JUMP":
@@ -125,10 +121,10 @@ export default class UndoHistory<S=any> {
         valid = this.past.length >= 1
         break 
       case "JUMP_TO_FUTURE":
-        valid = this.isNumber(index) && (index as number) >= 0 && this.future.length >= (index as number)
+        valid = this.isNumber(index) && (index as number) >= 0 && this.future.length > (index as number)
         break 
       case "JUMP_TO_PAST":
-        valid = this.isNumber(index) && (index as number) >= 0 && this.past.length >= (index as number)
+        valid = this.isNumber(index) && (index as number) >= 0 && this.past.length > (index as number)
         break 
     }
     
@@ -157,12 +153,8 @@ export default class UndoHistory<S=any> {
   // 清除  
   clear() {
     this.logStart(ActionTypes.CLEAR_HISTORY)
-    if(!this.actionCan(ActionTypes.CLEAR_HISTORY)) {
-      this.logEnd()
-      return CAN_NOT_DEALING
-    } 
 
-    this.filter(ActionTypes.CLEAR_HISTORY, () => {
+    const result = this.filter(ActionTypes.CLEAR_HISTORY, () => {
       return {
         past: [] as S[],
         future: [] as S[],
@@ -171,6 +163,8 @@ export default class UndoHistory<S=any> {
     })
 
     this.logEnd()
+
+    return this.isActionDataValid(result) ? undefined : result 
 
   }
 

@@ -30,7 +30,7 @@ export default class WrapperComponent<P = {}, S = {}, SS = any, C extends object
         }
         return realState
       }, () => {
-        this.noteState(realState === null ? realState : this.state, prevState)
+        this.noteState(realState, prevState)
         callback?.()
       })
     }
@@ -117,8 +117,6 @@ export default class WrapperComponent<P = {}, S = {}, SS = any, C extends object
         this.internalSetState({
           [realKey]: result 
         }, realCallback)
-      }else {
-        realCallback?.()
       }
       return result 
     }
@@ -133,9 +131,10 @@ export default class WrapperComponent<P = {}, S = {}, SS = any, C extends object
       Object.entries(state).forEach(stateData => {
         const [ key, value ] = stateData
         const prevValue = (prevState as any)[key]
+
         if((observer as string[]).includes(key)){
-          const target = this.undoHistories.get(key as keyof C)
-          target?.enqueue(value as C[keyof C], prevValue)
+          const targetHistory = this.undoHistories.get(key as keyof C)
+          targetHistory?.enqueue(value as C[keyof C], prevValue)
         }
       })
     }

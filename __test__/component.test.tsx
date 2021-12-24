@@ -58,6 +58,46 @@ class ObserverUndoComponent extends Component<any, {}, any, {
 
 }
 
+class ObserverMultiUndoComponent extends Component<any, {}, any, {
+  counter: number
+  total: number 
+}> {
+
+  constructor(props) {
+    super(props, {
+      observer: ["counter", "total"]
+    })
+  }
+
+  state = {
+    counter: 0,
+    total: 0
+  }
+
+  setCounter = async (value: number) => {
+    return new Promise((resolve) => {
+      this.setState({
+        counter: value
+      }, resolve.bind(this, undefined))
+    })
+  }
+
+  setTotal = (value: number) => {
+    return new Promise((resolve) => {
+      this.setState({
+        total: value
+      }, resolve.bind(this, undefined))
+    })
+  }
+
+  render() {
+    return (
+      <div></div>
+    )
+  }
+
+}
+
 describe("react component test", function() {
 
   it('set state with function', (done) => {
@@ -96,6 +136,36 @@ describe("react component test", function() {
       done()
     })
 
+  })
+
+  it(`set state with function and return null`, (done) => {
+    const wrapper = shallow(<DefaultUndoComponent />)
+
+    expect(wrapper.state().counter).toEqual(0)
+
+    wrapper.instance().setState(() => {
+      return null 
+    }, () => {
+      expect(wrapper.state().counter).toEqual(0);
+  
+      expect((wrapper.instance().history as UndoHistory).history.past.length).toEqual(0)
+
+      done()
+    })
+  })
+
+  it(`set state with null`, (done) => {
+    const wrapper = shallow(<DefaultUndoComponent />)
+
+    expect(wrapper.state().counter).toEqual(0)
+
+    wrapper.instance().setState(null, () => {
+      expect(wrapper.state().counter).toEqual(0);
+  
+      expect((wrapper.instance().history as UndoHistory).history.past.length).toEqual(0)
+
+      done()
+    })
   })
 
   describe(`config observer`, () => {
@@ -218,6 +288,34 @@ describe("react component test", function() {
 
     })
 
+    it(`undo4Target for all test`, (done) => {
+      const wrapper = shallow(<ObserverMultiUndoComponent />)
+
+      wrapper.instance().setCounter(1)
+      .then(_ => wrapper.instance().setTotal(1))
+      .then(_ => {
+        expect(wrapper.state().counter).toEqual(1);
+        expect(wrapper.state().total).toEqual(1);
+
+        const history = wrapper.instance().history
+        const counterHistory = history.get("counter")
+        const totalHistory = history.get("total")
+
+        expect(counterHistory.state).toEqual(1)
+        expect(totalHistory.state).toEqual(1)
+
+        wrapper.instance().undo4target(() => {
+          expect(wrapper.state().counter).toEqual(0);
+          expect(wrapper.state().total).toEqual(0);
+    
+          expect(counterHistory.state).toEqual(0)
+          expect(totalHistory.state).toEqual(0)
+
+          done()
+        })
+      })
+    })
+
     it(`redo test`, (done) => {
 
       const wrapper = shallow(<DefaultUndoComponent />)
@@ -275,6 +373,43 @@ describe("react component test", function() {
         })
       })
 
+    })
+
+    it(`redo4Target for all test`, (done) => {
+      const wrapper = shallow(<ObserverMultiUndoComponent />)
+
+      wrapper.instance().setCounter(1)
+      .then(_ => wrapper.instance().setTotal(1))
+      .then(_ => {
+        expect(wrapper.state().counter).toEqual(1);
+        expect(wrapper.state().total).toEqual(1);
+
+        const history = wrapper.instance().history
+        const counterHistory = history.get("counter")
+        const totalHistory = history.get("total")
+
+        expect(counterHistory.state).toEqual(1)
+        expect(totalHistory.state).toEqual(1)
+
+        wrapper.instance().undo4target(() => {
+          expect(wrapper.state().counter).toEqual(0);
+          expect(wrapper.state().total).toEqual(0);
+    
+          expect(counterHistory.state).toEqual(0)
+          expect(totalHistory.state).toEqual(0)
+
+          wrapper.instance().redo4target(() => {
+            expect(wrapper.state().counter).toEqual(1);
+            expect(wrapper.state().total).toEqual(1);
+        
+            expect(counterHistory.state).toEqual(1)
+            expect(totalHistory.state).toEqual(1)
+  
+            done()
+          })
+        })
+
+      })
     })
 
     it(`jump test`, (done) => {
@@ -340,6 +475,34 @@ describe("react component test", function() {
       })
     })
 
+    it(`jump4target for all test`, (done) => {
+      const wrapper = shallow(<ObserverMultiUndoComponent />)
+
+      wrapper.instance().setCounter(1)
+      .then(_ => wrapper.instance().setTotal(1))
+      .then(_ => {
+        expect(wrapper.state().counter).toEqual(1);
+        expect(wrapper.state().total).toEqual(1);
+
+        const history = wrapper.instance().history
+        const counterHistory = history.get("counter")
+        const totalHistory = history.get("total")
+
+        expect(counterHistory.state).toEqual(1)
+        expect(totalHistory.state).toEqual(1)
+
+        wrapper.instance().jump4target(-1, () => {
+          expect(wrapper.state().counter).toEqual(0);
+          expect(wrapper.state().total).toEqual(0);
+    
+          expect(counterHistory.state).toEqual(0)
+          expect(totalHistory.state).toEqual(0)
+
+          done()
+        })
+      })
+    })
+
     it(`jumpToPast test`, (done) => {
       const wrapper = shallow(<DefaultUndoComponent />)
 
@@ -375,6 +538,34 @@ describe("react component test", function() {
           expect(wrapper.state().counter).toEqual(0);
     
           expect(targetHistory.state).toEqual(0)
+
+          done()
+        })
+      })
+    })
+
+    it(`jumpToPast4target for all test`, (done) => {
+      const wrapper = shallow(<ObserverMultiUndoComponent />)
+
+      wrapper.instance().setCounter(1)
+      .then(_ => wrapper.instance().setTotal(1))
+      .then(_ => {
+        expect(wrapper.state().counter).toEqual(1);
+        expect(wrapper.state().total).toEqual(1);
+
+        const history = wrapper.instance().history
+        const counterHistory = history.get("counter")
+        const totalHistory = history.get("total")
+
+        expect(counterHistory.state).toEqual(1)
+        expect(totalHistory.state).toEqual(1)
+
+        wrapper.instance().jumpToPast4target(0, () => {
+          expect(wrapper.state().counter).toEqual(0);
+          expect(wrapper.state().total).toEqual(0);
+    
+          expect(counterHistory.state).toEqual(0)
+          expect(totalHistory.state).toEqual(0)
 
           done()
         })
@@ -438,6 +629,43 @@ describe("react component test", function() {
       })
     })
 
+    it(`jumpToFuture4target for all test`, (done) => {
+      const wrapper = shallow(<ObserverMultiUndoComponent />)
+
+      wrapper.instance().setCounter(1)
+      .then(_ => wrapper.instance().setTotal(1))
+      .then(_ => {
+        expect(wrapper.state().counter).toEqual(1);
+        expect(wrapper.state().total).toEqual(1);
+
+        const history = wrapper.instance().history
+        const counterHistory = history.get("counter")
+        const totalHistory = history.get("total")
+
+        expect(counterHistory.state).toEqual(1)
+        expect(totalHistory.state).toEqual(1)
+
+        wrapper.instance().undo4target(() => {
+          expect(wrapper.state().counter).toEqual(0);
+          expect(wrapper.state().total).toEqual(0);
+    
+          expect(counterHistory.state).toEqual(0)
+          expect(totalHistory.state).toEqual(0)
+
+          wrapper.instance().jumpToFuture4target(0, () => {
+            expect(wrapper.state().counter).toEqual(1);
+            expect(wrapper.state().total).toEqual(1);
+        
+            expect(counterHistory.state).toEqual(1)
+            expect(totalHistory.state).toEqual(1)
+  
+            done()
+          })
+        })
+
+      })
+    })
+
     it(`clear test`, (done) => {
       const wrapper = shallow(<DefaultUndoComponent />)
 
@@ -478,6 +706,35 @@ describe("react component test", function() {
 
       })
 
+    })
+
+    it(`clear4target for all test`, (done) => {
+      const wrapper = shallow(<ObserverMultiUndoComponent />)
+
+      wrapper.instance().setCounter(1)
+      wrapper.instance().setTotal(1)
+      .then(_ => {
+        expect(wrapper.state().counter).toEqual(1);
+        expect(wrapper.state().total).toEqual(1);
+
+        const history = wrapper.instance().history
+        const counterHistory = history.get("counter")
+        const totalHistory = history.get("total")
+
+        expect(counterHistory.state).toEqual(1)
+        expect(totalHistory.state).toEqual(1)
+
+        wrapper.instance().clear4target()
+
+        expect(wrapper.state().counter).toEqual(DEFAULT_PRESENT_DATA);
+        expect(wrapper.state().total).toEqual(DEFAULT_PRESENT_DATA);
+    
+        expect(counterHistory.state).toEqual(DEFAULT_PRESENT_DATA)
+        expect(totalHistory.state).toEqual(DEFAULT_PRESENT_DATA)
+
+        done()
+
+      })
     })
 
     it(`initState test`, (done) => {
